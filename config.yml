@@ -2,7 +2,7 @@
 script_options:
   # Switch between testnet and mainnet
   # Setting this to False will use REAL funds, use at your own risk
-  TESTNET: True
+  TESTNET: False
   LOG_TRADES: True
   LOG_FILE: 'trades.txt'
 
@@ -13,7 +13,7 @@ trading_options:
   PAIR_WITH: USDT
 
   # Total ammount per trade
-  QUANTITY: 15
+  QUANTITY: 20
 
   # List of pairs to exlcude
   # by default we're excluding the most popular fiat pairs
@@ -29,19 +29,19 @@ trading_options:
   MAX_COINS: 10
 
   # the amount of time in SECONDS to calculate the differnce from the current price
-  TIME_DIFFERENCE: 30
+  TIME_DIFFERENCE: 120
 
   # Numer of times to check for TP/SL during each TIME_DIFFERENCE Minimum 1
-  RECHECK_INTERVAL: 6
+  RECHECK_INTERVAL: 12
 
   # the difference in % between the first and second checks for the price.
-  CHANGE_IN_PRICE: 1.25
+  CHANGE_IN_PRICE: 2
 
   # define in % when to sell a coin that's not making a profit
   STOP_LOSS: 1.75
 
   # define in % when to take profit on a profitable coin
-  TAKE_PROFIT: 3
+  TAKE_PROFIT: 2.5
 
   # Use custom tickers.txt list for filtering pairs
   CUSTOM_LIST: False
@@ -53,3 +53,9 @@ trading_options:
   # when hit TAKE_PROFIT, move TAKE_PROFIT up by TRAILING_TAKE_PROFIT percentage points
   TRAILING_STOP_LOSS: 2
   TRAILING_TAKE_PROFIT: 2
+
+
+  VOLATILITY_LIM: 3
+  VOLUME_LIM: 0.05
+  HISTORICAL_LIM: 20 # minutes
+

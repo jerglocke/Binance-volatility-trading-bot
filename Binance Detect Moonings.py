@@ -389,8 +389,8 @@ if __name__ == '__main__':
     print('Press Ctrl-Q to stop the script')
 
     if not TESTNET:
-        print('WARNING: You are using the Mainnet and live funds. Waiting 30 seconds as a security measure')
-        time.sleep(30)
+        print('WARNING: You are using the Mainnet and live funds. Waiting 5 seconds as a security measure')
+        time.sleep(5)
 
     while True:
         orders, last_price, volume = buy()
