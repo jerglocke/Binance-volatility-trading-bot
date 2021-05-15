@@ -18,6 +18,7 @@ from itertools import count
 # used to store trades and sell assets
 import json
 
+import numpy as np
 
 # Load helper modules
 from helpers.parameters import (
@@ -62,10 +63,13 @@ def wait_for_price():
 
     volatile_coins = {}
     initial_price = get_price()
+    print('\n')
+    print('Initial Price Check Time: '+initial_price['BNBUSDT']['time'].strftime("%d-%m-%Y, %H:%M:%S.%f"))
 
     while initial_price['BNB' + PAIR_WITH]['time'] > datetime.now() - timedelta(seconds=TIME_DIFFERENCE):
         i=0
         while i < RECHECK_INTERVAL:
+            print('            Current Time: '+datetime.now().strftime("%d-%m-%Y, %H:%M:%S.%f"))
             print(f'checking TP/SL...')
             coins_sold = sell_coins()
             remove_from_portfolio(coins_sold)
@@ -162,6 +166,29 @@ def buy():
         # only buy if the there are no active trades on the coin
         if coin not in coins_bought:
             print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
+
+            print('Checking volatility and volume of '+coin+'...')
+            #timestamp = time.time() - TIME_DIFFERENCE*3
+            # request historical candle (or klines) data
+            bars = client.get_historical_klines(coin, '1m', str(HISTORICAL_LIM)+' minutes ago ADT')
+            close = []
+            volume_array = []
+            for bar in bars:
+                close.append(float(bar[4]))
+                volume_array.append(float(bar[5]))
+
+            volatility_check = np.std(close)/np.mean(close) > VOLATILITY_LIM/100.
+            volume_check = np.mean(close)/np.mean(volume_array) < VOLUME_LIM/100.
+
+
+            if volatility_check or volume_check:
+                if volatility_check: print('Volatility for coin was greater than '+str(VOLATILITY_LIM)+'%, NOT BUYING '+coin)
+                else: print('Volume for coin was less than '+str(VOLUME_LIM)+'%, NOT BUYING '+coin)
+                continue
+            else:
+                print('Volatility for coin was less than '+str(VOLATILITY_LIM)+'% and volume sufficient, BUYING '+coin)
+
+
 
             if TESTNET :
                 # create test order before pushing an actual order
@@ -345,7 +372,11 @@ if __name__ == '__main__':
     USE_TRAILING_STOP_LOSS = parsed_config['trading_options']['USE_TRAILING_STOP_LOSS']
     TRAILING_STOP_LOSS = parsed_config['trading_options']['TRAILING_STOP_LOSS']
     TRAILING_TAKE_PROFIT = parsed_config['trading_options']['TRAILING_TAKE_PROFIT']
-    
+    VOLATILITY_LIM = parsed_config['trading_options']['VOLATILITY_LIM']
+    VOLUME_LIM = parsed_config['trading_options']['VOLUME_LIM']
+    HISTORICAL_LIM = parsed_config['trading_options']['HISTORICAL_LIM']
+
+
     if DEBUG_SETTING or args.debug:
         DEBUG = True
 
@@ -397,4 +428,5 @@ if __name__ == '__main__':
         update_portfolio(orders, last_price, volume)
         coins_sold = sell_coins()
         remove_from_portfolio(coins_sold)
-        
+
+
