@@ -178,12 +178,12 @@ def buy():
                 volume_array.append(float(bar[5]))
 
             volatility_check = np.std(close)/np.mean(close) > VOLATILITY_LIM/100.
-            volume_check = np.mean(close)/np.mean(volume_array) < VOLUME_LIM/100.
+            volume_check = np.mean(close)/np.mean(volume_array) > VOLUME_LIM/100.
 
 
             if volatility_check or volume_check:
                 if volatility_check: print('Volatility for coin was greater than '+str(VOLATILITY_LIM)+'%, NOT BUYING '+coin)
-                else: print('Volume for coin was less than '+str(VOLUME_LIM)+'%, NOT BUYING '+coin)
+                else: print('Volume for coin was greater than '+str(VOLUME_LIM)+'%, NOT BUYING '+coin)
                 continue
             else:
                 print('Volatility for coin was less than '+str(VOLATILITY_LIM)+'% and volume sufficient, BUYING '+coin)
