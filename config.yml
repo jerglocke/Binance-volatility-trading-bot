@@ -29,13 +29,13 @@ trading_options:
   MAX_COINS: 10
 
   # the amount of time in SECONDS to calculate the differnce from the current price
-  TIME_DIFFERENCE: 120
+  TIME_DIFFERENCE: 60
 
   # Numer of times to check for TP/SL during each TIME_DIFFERENCE Minimum 1
   RECHECK_INTERVAL: 12
 
   # the difference in % between the first and second checks for the price.
-  CHANGE_IN_PRICE: 2
+  CHANGE_IN_PRICE: 1.75
 
   # define in % when to sell a coin that's not making a profit
   STOP_LOSS: 1.75
@@ -55,7 +55,7 @@ trading_options:
   TRAILING_TAKE_PROFIT: 2
 
 
-  VOLATILITY_LIM: 3
-  VOLUME_LIM: 0.05
+  VOLATILITY_LIM: 2
+  VOLUME_LIM: 0.001
   HISTORICAL_LIM: 20 # minutes
 

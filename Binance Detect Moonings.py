@@ -175,10 +175,10 @@ def buy():
             volume_array = []
             for bar in bars:
                 close.append(float(bar[4]))
-                volume_array.append(float(bar[5]))
+                volume_array.append(float(bar[7]))
 
             volatility_check = np.std(close)/np.mean(close) > VOLATILITY_LIM/100.
-            volume_check = np.mean(close)/np.mean(volume_array) > VOLUME_LIM/100.
+            volume_check = QUANTITY/np.mean(volume_array) > VOLUME_LIM/100.
 
 
             if volatility_check or volume_check:
