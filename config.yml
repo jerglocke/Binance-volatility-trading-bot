@@ -35,13 +35,13 @@ trading_options:
   RECHECK_INTERVAL: 12
 
   # the difference in % between the first and second checks for the price.
-  CHANGE_IN_PRICE: 1.75
+  CHANGE_IN_PRICE: 1.3
 
   # define in % when to sell a coin that's not making a profit
-  STOP_LOSS: 1.75
+  STOP_LOSS: 1.25
 
   # define in % when to take profit on a profitable coin
-  TAKE_PROFIT: 2.5
+  TAKE_PROFIT: 2
 
   # Use custom tickers.txt list for filtering pairs
   CUSTOM_LIST: False
@@ -51,11 +51,11 @@ trading_options:
 
   # when hit TAKE_PROFIT, move STOP_LOSS to TRAILING_STOP_LOSS percentage points below TAKE_PROFIT hence locking in profit
   # when hit TAKE_PROFIT, move TAKE_PROFIT up by TRAILING_TAKE_PROFIT percentage points
-  TRAILING_STOP_LOSS: 2
-  TRAILING_TAKE_PROFIT: 2
+  TRAILING_STOP_LOSS: 1.5
+  TRAILING_TAKE_PROFIT: 1
 
 
-  VOLATILITY_LIM: 2
-  VOLUME_LIM: 0.001
-  HISTORICAL_LIM: 20 # minutes
-
+  VOLATILITY_LIM: 2     # percentage
+  VOLUME_LIM: 0.1       # percentage
+  HISTORICAL_LIM: 20    # minutes
+  DUMP_RATIO_LIMIT: 20  # ratio
