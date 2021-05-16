@@ -68,6 +68,7 @@ def wait_for_price():
 
     while initial_price['BNB' + PAIR_WITH]['time'] > datetime.now() - timedelta(seconds=TIME_DIFFERENCE):
         i=0
+        print(f'not enough time has passed yet...')
         while i < RECHECK_INTERVAL:
             print('            Current Time: '+datetime.now().strftime("%d-%m-%Y, %H:%M:%S.%f"))
             print(f'checking TP/SL...')
@@ -76,8 +77,6 @@ def wait_for_price():
             time.sleep((TIME_DIFFERENCE/RECHECK_INTERVAL))
             i += 1
             # let's wait here until the time passess...
-
-        print(f'not enough time has passed yet...')
 
     else:
         last_price = get_price()
@@ -165,7 +164,7 @@ def buy():
 
         # only buy if the there are no active trades on the coin
         if coin not in coins_bought:
-            print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
+            print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin} at {last_price[coin]['price']} {PAIR_WITH}{txcolors.DEFAULT}")
 
             print('Checking volatility and volume of '+coin+'...')
             #timestamp = time.time() - TIME_DIFFERENCE*3
@@ -173,21 +172,30 @@ def buy():
             bars = client.get_historical_klines(coin, '1m', str(HISTORICAL_LIM)+' minutes ago ADT')
             close = []
             volume_array = []
-            for bar in bars:
-                close.append(float(bar[4]))
+            for i, bar in enumerate(bars):
+                if i<(len(bars)-2): close.append(float(bar[4]))
                 volume_array.append(float(bar[7]))
 
-            volatility_check = np.std(close)/np.mean(close) > VOLATILITY_LIM/100.
-            volume_check = QUANTITY/np.mean(volume_array) > VOLUME_LIM/100.
+            avg_volume = np.mean(volume_array)
+
+            #volatility_check = np.std(close)/np.mean(close) > VOLATILITY_LIM/100.
+            volatility_check = (max(close) - min(close))/np.mean(close) > VOLATILITY_LIM/100.
+            volume_check = QUANTITY/avg_volume > VOLUME_LIM/100.
 
 
             if volatility_check or volume_check:
-                if volatility_check: print('Volatility for coin was greater than '+str(VOLATILITY_LIM)+'%, NOT BUYING '+coin)
-                else: print('Volume for coin was greater than '+str(VOLUME_LIM)+'%, NOT BUYING '+coin)
+                if volatility_check: print(f'{txcolors.SELL}Volatility for coin was greater than {VOLATILITY_LIM}%, NOT BUYING {coin}{txcolors.DEFAULT}')
+                else: print(f'{txcolors.SELL}Value of trade is less than ({VOLUME_LIM}%) of the Volume ({avg_volume}), NOT BUYING {coin}{txcolors.DEFAULT}')
                 continue
             else:
-                print('Volatility for coin was less than '+str(VOLATILITY_LIM)+'% and volume sufficient, BUYING '+coin)
+                print(f"{txcolors.BUY}Volatility for coin was less than {VOLATILITY_LIM}% and Volume ({avg_volume}) sufficient, BUYING {coin}{txcolors.DEFAULT}")
 
+
+            dump_ratio = volume_array[-1]/np.mean(volume_array[:-1])
+            dump_check = dump_ratio > DUMP_RATIO_LIMIT
+            if dump_check:
+                print(f"{txcolors.SELL} WARNING: Whale dump detected ({dump_ratio}x), NOT BUYING {coin}{txcolors.DEFAULT}")
+                continue
 
 
             if TESTNET :
@@ -223,7 +231,7 @@ def buy():
 
                     # Log trade
                     if LOG_TRADES:
-                        write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                        write_log(f"Buy, {volume[coin]}, {coin}, {last_price[coin]['price']}, 0, 0, 0")
 
 
         else:
@@ -250,17 +258,22 @@ def sell_coins():
 
         # check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss used
         if float(last_price[coin]['price']) > TP and USE_TRAILING_STOP_LOSS:
-            print("TP reached, adjusting TP and SL accordingly to lock-in profit")
+            print(f"{txcolors.BUY}TP reached, adjusting TP and SL accordingly to lock-in profit{txcolors.DEFAULT}")
             
             # increasing TP by TRAILING_TAKE_PROFIT (essentially next time to readjust SL)
             coins_bought[coin]['take_profit'] += TRAILING_TAKE_PROFIT
             coins_bought[coin]['stop_loss'] = coins_bought[coin]['take_profit'] - TRAILING_STOP_LOSS
 
+            print(f"{txcolors.BUY}New TP: {coins_bought[coin]['take_profit']}%{txcolors.DEFAULT}")
+            print(f"{txcolors.BUY}New SL: {coins_bought[coin]['stop_loss']}%{txcolors.DEFAULT}")
+
+
             continue
 
         # check that the price is below the stop loss or above take profit (if trailing stop loss not used) and sell if this is the case 
         if float(last_price[coin]['price']) < SL or (float(last_price[coin]['price']) > TP and not USE_TRAILING_STOP_LOSS):
-            print(f"{txcolors.SELL}TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}%{txcolors.DEFAULT}")
+            if PriceChange < 0: print(f"{txcolors.SELL}TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}%{txcolors.DEFAULT}")
+            else: print(f"{txcolors.BUY}TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange:.2f}%{txcolors.DEFAULT}")
 
             if TESTNET :
                 # create test order before pushing an actual order
@@ -288,7 +301,7 @@ def sell_coins():
 
                 if LOG_TRADES:
                     profit = (LastPrice - BuyPrice) * coins_sold[coin]['volume']
-                    write_log(f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange:.2f}%")
+                    write_log(f"Sell, {coins_sold[coin]['volume']}, {coin}, {BuyPrice}, {LastPrice}, {profit:.2f}, {PriceChange:.2f}")
             continue
 
         # no action
@@ -330,8 +343,10 @@ def remove_from_portfolio(coins_sold):
 
 def write_log(logline):
     timestamp = datetime.now().strftime("%d/%m %H:%M:%S")
+    logfile_exists = os.path.isfile('./trades.txt')
     with open(LOG_FILE,'a+') as f:
-        f.write(timestamp + ' ' + logline + '\n')
+        if not logfile_exists: f.write('time, type, amount, ticker, buy, sell, profit($), profit(%)\n')
+        f.write(timestamp + ', ' + logline + '\n')
 
 
 
@@ -375,6 +390,7 @@ if __name__ == '__main__':
     VOLATILITY_LIM = parsed_config['trading_options']['VOLATILITY_LIM']
     VOLUME_LIM = parsed_config['trading_options']['VOLUME_LIM']
     HISTORICAL_LIM = parsed_config['trading_options']['HISTORICAL_LIM']
+    DUMP_RATIO_LIMIT = parsed_config['trading_options']['DUMP_RATIO_LIMIT']
 
 
     if DEBUG_SETTING or args.debug:
